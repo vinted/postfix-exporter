@@ -20,6 +20,7 @@ type postfixCollector struct {
 	deferCount     *prometheus.Desc
 	deferSize      *prometheus.Desc
 	collectionTime *prometheus.Desc
+	scrapeTime     *prometheus.Desc
 }
 
 type postfixMetrics struct {
@@ -84,6 +85,10 @@ func NewPostfixCollector() *postfixCollector {
 			"Time it took for a collection thread to collect postfix metrics",
 			nil, nil,
 		),
+		scrapeTime: prometheus.NewDesc("postfix_metric_scrape_time",
+			"Time it took for prometheus to scrape postfix metrics",
+			nil, nil,
+		),
 	}
 }
 
@@ -98,9 +103,12 @@ func (collector *postfixCollector) Describe(ch chan<- *prometheus.Desc) {
 	ch <- collector.activeSize
 	ch <- collector.deferCount
 	ch <- collector.deferSize
+	ch <- collector.collectionTime
+	ch <- collector.scrapeTime
 }
 
 func (collector *postfixCollector) Collect(ch chan<- prometheus.Metric) {
+	scrapeTime := time.Now()
 	ch <- prometheus.MustNewConstMetric(collector.maildropCount, prometheus.GaugeValue, metricsCtx.maildropCount)
 	ch <- prometheus.MustNewConstMetric(collector.maildropSize, prometheus.GaugeValue, metricsCtx.maildropSize)
 	ch <- prometheus.MustNewConstMetric(collector.holdCount, prometheus.GaugeValue, metricsCtx.holdCount)
@@ -112,18 +120,16 @@ func (collector *postfixCollector) Collect(ch chan<- prometheus.Metric) {
 	ch <- prometheus.MustNewConstMetric(collector.deferCount, prometheus.GaugeValue, metricsCtx.deferCount)
 	ch <- prometheus.MustNewConstMetric(collector.deferSize, prometheus.GaugeValue, metricsCtx.deferSize)
 	ch <- prometheus.MustNewConstMetric(collector.collectionTime, prometheus.GaugeValue, metricsCtx.collectionTime)
+	ch <- prometheus.MustNewConstMetric(collector.scrapeTime, prometheus.GaugeValue, time.Since(scrapeTime).Seconds())
 }
 
 func CollectTimer(queryInterval int, postfixSpoolPath string) {
 	tickChan := time.NewTicker(time.Second * time.Duration(queryInterval))
 	defer tickChan.Stop()
-	for {
-		select {
-		case <-tickChan.C:
-			log.Debug("collectMetrics triggered")
-			metricsCtx.collectMetrics(postfixSpoolPath)
-			log.Debug("collectMetrics ended")
-		}
+	for range tickChan.C {
+		log.Debug("collectMetrics triggered")
+		metricsCtx.collectMetrics(postfixSpoolPath)
+		log.Debug("collectMetrics ended")
 	}
 }
 
