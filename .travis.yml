@@ -1,0 +1,15 @@
+language: go
+go:
+ - "1.13.x"
+
+env:
+  - GO111MODULE=on
+
+install: true
+
+before_install:
+  - curl -sfL https://install.goreleaser.com/github.com/golangci/golangci-lint.sh | bash -s -- -b $GOPATH/bin v1.22.2
+
+script:
+  - golangci-lint run
+  - go test -v ./collector
