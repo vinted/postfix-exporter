@@ -4,11 +4,11 @@
 
 Exporter collects Postfix queue metrics:
 
-`maildrop`   
-`hold`   
-`incoming`   
-`active`   
-`defer`   
+`maildrop`
+`hold`
+`incoming`
+`active`
+`deferred`
 
 Uses separate collection thread, so scrape time will not be affected on highly loaded mail servers.
 
