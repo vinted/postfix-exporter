@@ -1,11 +1,12 @@
 package collector
 
 import (
-	"github.com/prometheus/client_golang/prometheus"
-	log "github.com/sirupsen/logrus"
 	"os"
 	"path/filepath"
 	"time"
+
+	"github.com/prometheus/client_golang/prometheus"
+	log "github.com/sirupsen/logrus"
 )
 
 type postfixCollector struct {
@@ -19,6 +20,8 @@ type postfixCollector struct {
 	activeSize     *prometheus.Desc
 	deferCount     *prometheus.Desc
 	deferSize      *prometheus.Desc
+	deferredCount  *prometheus.Desc
+	deferredSize   *prometheus.Desc
 	collectionTime *prometheus.Desc
 	scrapeTime     *prometheus.Desc
 }
@@ -34,6 +37,8 @@ type postfixMetrics struct {
 	activeSize     float64
 	deferCount     float64
 	deferSize      float64
+	deferredCount  float64
+	deferredSize   float64
 	collectionTime float64
 }
 
@@ -81,6 +86,14 @@ func NewPostfixCollector() *postfixCollector {
 			"Total size of messages in defer queue",
 			nil, nil,
 		),
+		deferredCount: prometheus.NewDesc("postfix_deferred_queue_count",
+			"Number of messages in deferred queue",
+			nil, nil,
+		),
+		deferredSize: prometheus.NewDesc("postfix_deferred_queue_size",
+			"Total size of messages in deferred queue",
+			nil, nil,
+		),
 		collectionTime: prometheus.NewDesc("postfix_metric_collection_time",
 			"Time it took for a collection thread to collect postfix metrics",
 			nil, nil,
@@ -103,6 +116,8 @@ func (collector *postfixCollector) Describe(ch chan<- *prometheus.Desc) {
 	ch <- collector.activeSize
 	ch <- collector.deferCount
 	ch <- collector.deferSize
+	ch <- collector.deferredCount
+	ch <- collector.deferredSize
 	ch <- collector.collectionTime
 	ch <- collector.scrapeTime
 }
@@ -119,6 +134,8 @@ func (collector *postfixCollector) Collect(ch chan<- prometheus.Metric) {
 	ch <- prometheus.MustNewConstMetric(collector.activeSize, prometheus.GaugeValue, metricsCtx.activeSize)
 	ch <- prometheus.MustNewConstMetric(collector.deferCount, prometheus.GaugeValue, metricsCtx.deferCount)
 	ch <- prometheus.MustNewConstMetric(collector.deferSize, prometheus.GaugeValue, metricsCtx.deferSize)
+	ch <- prometheus.MustNewConstMetric(collector.deferredCount, prometheus.GaugeValue, metricsCtx.deferredCount)
+	ch <- prometheus.MustNewConstMetric(collector.deferredSize, prometheus.GaugeValue, metricsCtx.deferredSize)
 	ch <- prometheus.MustNewConstMetric(collector.collectionTime, prometheus.GaugeValue, metricsCtx.collectionTime)
 	ch <- prometheus.MustNewConstMetric(collector.scrapeTime, prometheus.GaugeValue, time.Since(scrapeTime).Seconds())
 }
@@ -140,6 +157,7 @@ func (pm *postfixMetrics) collectMetrics(postfixSpoolPath string) {
 	pm.incomingCount, pm.incomingSize = DirectoryWalk(postfixSpoolPath, "incoming")
 	pm.activeCount, pm.activeSize = DirectoryWalk(postfixSpoolPath, "active")
 	pm.deferCount, pm.deferSize = DirectoryWalk(postfixSpoolPath, "defer")
+	pm.deferredCount, pm.deferredSize = DirectoryWalk(postfixSpoolPath, "deferred")
 	pm.collectionTime = time.Since(collectionTime).Seconds()
 }
 
