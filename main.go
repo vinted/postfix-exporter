@@ -2,11 +2,12 @@ package main
 
 import (
 	"flag"
+	"net/http"
+
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	log "github.com/sirupsen/logrus"
 	"github.com/vinted/postfix-exporter/collector"
-	"net/http"
 )
 
 var (
@@ -37,7 +38,7 @@ func main() {
 	http.Handle("/metrics", promhttp.Handler())
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		_, err := w.Write([]byte(`<html>
-    <head><title>Ceph Exporter</title></head>
+    <head><title>Postfix Exporter</title></head>
     <body>
     <h1>Postfix Exporter</h1>
     <p><a href='metrics'>Metrics</a></p>
