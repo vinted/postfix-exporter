@@ -1,6 +1,6 @@
 module github.com/vinted/postfix-exporter
 
-go 1.25.0
+go 1.25.3
 
 require (
 	github.com/prometheus/client_golang v1.23.2
