@@ -15,6 +15,7 @@ var (
 	queryInterval    = flag.Int("query.interval", 15, "How often should daemon read metrics")
 	logLevel         = flag.String("log.level", "info", "Logging level")
 	postfixSpoolPath = flag.String("spool.path", "/var/spool/postfix", "path to Postfix spool directory")
+	postfixLogPath   = flag.String("log.path", "/var/log/maillog", "path to Postfix log file for delivery metrics, empty to disable")
 )
 
 func main() {
@@ -34,6 +35,12 @@ func main() {
 
 	pf := collector.NewPostfixCollector()
 	prometheus.MustRegister(pf)
+
+	if *postfixLogPath != "" {
+		prometheus.MustRegister(collector.DeliveriesTotal, collector.DeliveryDelay,
+			collector.DeliveryStageDelay, collector.LogTailActive)
+		go collector.TailLog(*postfixLogPath)
+	}
 
 	http.Handle("/metrics", promhttp.Handler())
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
